@@ -1,8 +1,27 @@
 package main
 
-import "fmt"
+import (
+	"os"
+
+	"github.com/Sawansunar56/flappy-bird-golang/src/game"
+	"github.com/gdamore/tcell/v2"
+)
 
 func main() {
-  fmt.Println("Hello World")
-}
+	screen, err := tcell.NewScreen()
+	if err != nil {
+		// Handle error
+		os.Exit(1)
+	}
 
+	err = screen.Init()
+	if err != nil {
+		// Handle error
+		os.Exit(1)
+	}
+	defer screen.Fini()
+
+	// Create a simple TUI here
+
+	game.Game(screen)
+}
