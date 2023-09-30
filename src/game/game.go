@@ -29,7 +29,6 @@ func renderTopBox(screen tcell.Screen, x, y int, display [wide][high]rune) [wide
 	horizontalLine := '─'
 	verticalLine := '│'
 
-	display[10][10] = 'x'
 	for i := 1; i <= y; i++ {
 		display[x][y-i] = verticalLine
 	}
@@ -78,11 +77,13 @@ func renderBottomBox(screen tcell.Screen, x, y int, display [wide][high]rune) [w
 func platform(screen tcell.Screen, x, y int) {
 }
 
-func renderNewBox(screen tcell.Screen, display [wide][high]rune) [wide][high]rune {
-	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	randomNumber := r.Intn(30-3+1) + 3
-	display = renderTopBox(screen, 130, randomNumber, display)
-	display = renderBottomBox(screen, 130, randomNumber, display)
+func renderNewBox(screen tcell.Screen, display [wide][high]rune, count int) [wide][high]rune {
+	if count == 30 {
+		r := rand.New(rand.NewSource(time.Now().UnixNano()))
+		randomNumber := r.Intn(30-3+1) + 3
+		display = renderTopBox(screen, 130, randomNumber, display)
+		display = renderBottomBox(screen, 130, randomNumber, display)
+	}
 	return display
 }
 
@@ -115,34 +116,62 @@ func Game(screen tcell.Screen) {
 
 	screen.Show()
 
-	for {
-		ev := screen.PollEvent()
-		switch ev.(type) {
-		case *tcell.EventKey:
-			// Handle key events
-			keyEvent := ev.(*tcell.EventKey)
-			if keyEvent.Key() == tcell.KeyCtrlC {
-				return // Exit the application on Ctrl+C
-			} else if keyEvent.Rune() == 'i' {
-				screen.Clear()
-				display = renderBack(display, width, height)
-				for i := 0; i < width; i++ {
-					for j := 0; j < height; j++ {
-						screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
-					}
-				}
-				screen.Show()
-			} else if keyEvent.Rune() == 'x' {
-				screen.Clear()
-				display = renderNewBox(screen, display)
+	events := make(chan tcell.Event)
 
-				for i := 0; i < width; i++ {
-					for j := 0; j < height; j++ {
-						screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+	go func() {
+		for {
+			ev := screen.PollEvent()
+			events <- ev
+		}
+	}()
+
+	count := 30
+
+	for {
+		select {
+		case ev := <-events:
+			switch ev.(type) {
+			case *tcell.EventKey:
+				// Handle key events
+				keyEvent := ev.(*tcell.EventKey)
+				if keyEvent.Key() == tcell.KeyCtrlC {
+					return // Exit the application on Ctrl+C
+				} else if keyEvent.Rune() == 'i' {
+					screen.Clear()
+					display = renderBack(display, width, height)
+					for i := 0; i < width; i++ {
+						for j := 0; j < height; j++ {
+							screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+						}
 					}
+					screen.Show()
+				} else if keyEvent.Rune() == 'x' {
+					screen.Clear()
+					display = renderNewBox(screen, display, count)
+
+					for i := 0; i < width; i++ {
+						for j := 0; j < height; j++ {
+							screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+						}
+					}
+					screen.Show()
 				}
-				screen.Show()
 			}
+		default:
+			screen.Clear()
+			display = renderNewBox(screen, display, count)
+			if count == 30 {
+				count = 0
+			}
+			display = renderBack(display, width, height)
+			for i := 0; i < width; i++ {
+				for j := 0; j < height; j++ {
+					screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+				}
+			}
+			screen.Show()
+			count += 1
+			time.Sleep(100 * time.Millisecond)
 		}
 	}
 }
