@@ -5,12 +5,9 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/Sawansunar56/flappy-bird-golang/src/player"
+	"github.com/Sawansunar56/flappy-bird-golang/src/utils"
 	"github.com/gdamore/tcell/v2"
-)
-
-const (
-	wide int = 160
-	high int = 50
 )
 
 func randomNumberGenerator(min, max int, screen tcell.Screen) {
@@ -23,7 +20,7 @@ func randomNumberGenerator(min, max int, screen tcell.Screen) {
 }
 
 // Aligns a new top box in the display
-func renderTopBox(screen tcell.Screen, x, y int, display [wide][high]rune) [wide][high]rune {
+func renderTopBox(screen tcell.Screen, x, y int, display [utils.Wide][utils.High]rune) [utils.Wide][utils.High]rune {
 	bottomLeft := '└'
 	bottomRight := '┘'
 	horizontalLine := '─'
@@ -48,7 +45,7 @@ func renderTopBox(screen tcell.Screen, x, y int, display [wide][high]rune) [wide
 }
 
 // Aligns a new bottom box into the display
-func renderBottomBox(screen tcell.Screen, x, y int, display [wide][high]rune) [wide][high]rune {
+func renderBottomBox(screen tcell.Screen, x, y int, display [utils.Wide][utils.High]rune) [utils.Wide][utils.High]rune {
 	_, height := screen.Size()
 	topLeft := '┌'
 	topRight := '┐'
@@ -77,7 +74,7 @@ func renderBottomBox(screen tcell.Screen, x, y int, display [wide][high]rune) [w
 func platform(screen tcell.Screen, x, y int) {
 }
 
-func renderNewBox(screen tcell.Screen, display [wide][high]rune, count int) [wide][high]rune {
+func renderNewBox(screen tcell.Screen, display [utils.Wide][utils.High]rune, count int) [utils.Wide][utils.High]rune {
 	if count == 30 {
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		randomNumber := r.Intn(30-3+1) + 3
@@ -87,7 +84,7 @@ func renderNewBox(screen tcell.Screen, display [wide][high]rune, count int) [wid
 	return display
 }
 
-func renderBack(display [wide][high]rune, width, height int) [wide][high]rune {
+func renderBack(display [utils.Wide][utils.High]rune, width, height int) [utils.Wide][utils.High]rune {
 	for i := 0; i < width-1; i++ {
 		for j := 0; j < height; j++ {
 			display[i][j] = display[i+1][j]
@@ -98,7 +95,7 @@ func renderBack(display [wide][high]rune, width, height int) [wide][high]rune {
 
 func Game(screen tcell.Screen) {
 	width, height := screen.Size()
-	var display [wide][high]rune
+	var display [utils.Wide][utils.High]rune
 
 	text := strconv.Itoa(height) + " " + strconv.Itoa(width)
 	x := width/2 - len(text)/2
@@ -113,7 +110,6 @@ func Game(screen tcell.Screen) {
 			screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
 		}
 	}
-
 	screen.Show()
 
 	events := make(chan tcell.Event)
@@ -125,17 +121,38 @@ func Game(screen tcell.Screen) {
 		}
 	}()
 
+  downBias := 1
 	count := 30
+	var player player.Player
+	player.SetValues(20, 20)
+	display = player.Init(display)
 
 	for {
 		select {
 		case ev := <-events:
 			switch ev.(type) {
 			case *tcell.EventKey:
-				// Handle key events
 				keyEvent := ev.(*tcell.EventKey)
 				if keyEvent.Key() == tcell.KeyCtrlC {
-					return // Exit the application on Ctrl+C
+					return
+				} else if keyEvent.Key() == tcell.KeyUp {
+					screen.Clear()
+					display = player.UpMovement(display)
+					for i := 0; i < width; i++ {
+						for j := 0; j < height; j++ {
+							screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+						}
+					}
+					screen.Show()
+				} else if keyEvent.Key() == tcell.KeyDown {
+					screen.Clear()
+					display = player.DownMovement(display, height)
+					for i := 0; i < width; i++ {
+						for j := 0; j < height; j++ {
+							screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
+						}
+					}
+					screen.Show()
 				} else if keyEvent.Rune() == 'i' {
 					screen.Clear()
 					display = renderBack(display, width, height)
@@ -159,11 +176,17 @@ func Game(screen tcell.Screen) {
 			}
 		default:
 			screen.Clear()
+
 			display = renderNewBox(screen, display, count)
 			if count == 30 {
 				count = 0
 			}
 			display = renderBack(display, width, height)
+			display = player.Forward(display)
+			if downBias == 7 {
+				display = player.DownMovement(display, height)
+        downBias = 1
+			}
 			for i := 0; i < width; i++ {
 				for j := 0; j < height; j++ {
 					screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
@@ -171,6 +194,7 @@ func Game(screen tcell.Screen) {
 			}
 			screen.Show()
 			count += 1
+      downBias += 1
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
