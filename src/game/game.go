@@ -21,24 +21,19 @@ func randomNumberGenerator(min, max int, screen tcell.Screen) {
 
 // Aligns a new top box in the display
 func renderTopBox(screen tcell.Screen, x, y int, display [utils.Wide][utils.High]rune) [utils.Wide][utils.High]rune {
-	bottomLeft := '└'
-	bottomRight := '┘'
-	horizontalLine := '─'
-	verticalLine := '│'
-
 	for i := 1; i <= y; i++ {
-		display[x][y-i] = verticalLine
+		display[x][y-i] = utils.VerticalLine
 	}
 
-	display[x][y] = bottomLeft
+	display[x][y] = utils.BottomLeft
 	for i := 1; i <= 10; i++ {
-		display[x+i][y] = horizontalLine
+		display[x+i][y] = utils.HorizontalLine
 	}
 
 	x = x + 10
-	display[x][y] = bottomRight
+	display[x][y] = utils.BottomRight
 	for i := 1; i <= y; i++ {
-		display[x][y-i] = verticalLine
+		display[x][y-i] = utils.VerticalLine
 	}
 
 	return display
@@ -47,35 +42,28 @@ func renderTopBox(screen tcell.Screen, x, y int, display [utils.Wide][utils.High
 // Aligns a new bottom box into the display
 func renderBottomBox(screen tcell.Screen, x, y int, display [utils.Wide][utils.High]rune) [utils.Wide][utils.High]rune {
 	_, height := screen.Size()
-	topLeft := '┌'
-	topRight := '┐'
-	horizontalLine := '─'
-	verticalLine := '│'
 
 	for i := height - 1; i > y+10; i-- {
-		display[x][i] = verticalLine
+		display[x][i] = utils.VerticalLine
 	}
 
 	y = y + 10
-	display[x][y] = topLeft
+	display[x][y] = utils.TopLeft
 	for i := 1; i <= 10; i++ {
-		display[x+i][y] = horizontalLine
+		display[x+i][y] = utils.HorizontalLine
 	}
 
 	x = x + 10
-	display[x][y] = topRight
+	display[x][y] = utils.TopRight
 	for i := height - 1; i > y; i-- {
-		display[x][i] = verticalLine
+		display[x][i] = utils.VerticalLine
 	}
 
 	return display
 }
 
-func platform(screen tcell.Screen, x, y int) {
-}
-
 func renderNewBox(screen tcell.Screen, display [utils.Wide][utils.High]rune, count int) [utils.Wide][utils.High]rune {
-	if count == 30 {
+	if count == 35 {
 		r := rand.New(rand.NewSource(time.Now().UnixNano()))
 		randomNumber := r.Intn(30-3+1) + 3
 		display = renderTopBox(screen, 130, randomNumber, display)
@@ -121,9 +109,10 @@ func Game(screen tcell.Screen) {
 		}
 	}()
 
-  downBias := 1
+	downBias := 1
 	count := 30
 	var player player.Player
+	collisionCondition := true
 	player.SetValues(20, 20)
 	display = player.Init(display)
 
@@ -133,59 +122,48 @@ func Game(screen tcell.Screen) {
 			switch ev.(type) {
 			case *tcell.EventKey:
 				keyEvent := ev.(*tcell.EventKey)
+
 				if keyEvent.Key() == tcell.KeyCtrlC {
 					return
 				} else if keyEvent.Key() == tcell.KeyUp {
 					screen.Clear()
-					display = player.UpMovement(display)
+					// IMPLEMENT THE COLLISION CONDITION HERE>
+					display, collisionCondition = player.UpMovement(display)
 					for i := 0; i < width; i++ {
 						for j := 0; j < height; j++ {
 							screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
 						}
 					}
 					screen.Show()
+                    if collisionCondition == false {
+                        return
+                    }
 				} else if keyEvent.Key() == tcell.KeyDown {
 					screen.Clear()
-					display = player.DownMovement(display, height)
+					display, collisionCondition = player.DownMovement(display, height)
 					for i := 0; i < width; i++ {
 						for j := 0; j < height; j++ {
 							screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
 						}
 					}
 					screen.Show()
-				} else if keyEvent.Rune() == 'i' {
-					screen.Clear()
-					display = renderBack(display, width, height)
-					for i := 0; i < width; i++ {
-						for j := 0; j < height; j++ {
-							screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
-						}
-					}
-					screen.Show()
-				} else if keyEvent.Rune() == 'x' {
-					screen.Clear()
-					display = renderNewBox(screen, display, count)
-
-					for i := 0; i < width; i++ {
-						for j := 0; j < height; j++ {
-							screen.SetContent(i, j, display[i][j], nil, tcell.StyleDefault.Foreground(tcell.ColorWhite))
-						}
-					}
-					screen.Show()
+                    // if collisionCondition {
+                    //     return
+                    // }
 				}
 			}
 		default:
 			screen.Clear()
 
 			display = renderNewBox(screen, display, count)
-			if count == 30 {
+			if count == 35 {
 				count = 0
 			}
 			display = renderBack(display, width, height)
 			display = player.Forward(display)
 			if downBias == 7 {
-				display = player.DownMovement(display, height)
-        downBias = 1
+				display, collisionCondition = player.DownMovement(display, height)
+				downBias = 1
 			}
 			for i := 0; i < width; i++ {
 				for j := 0; j < height; j++ {
@@ -194,7 +172,7 @@ func Game(screen tcell.Screen) {
 			}
 			screen.Show()
 			count += 1
-      downBias += 1
+			downBias += 1
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
