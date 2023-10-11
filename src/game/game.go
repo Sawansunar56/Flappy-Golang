@@ -135,9 +135,9 @@ func Game(screen tcell.Screen) {
 						}
 					}
 					screen.Show()
-                    if collisionCondition == false {
-                        return
-                    }
+					if collisionCondition == false {
+						return
+					}
 				} else if keyEvent.Key() == tcell.KeyDown {
 					screen.Clear()
 					display, collisionCondition = player.DownMovement(display, height)
@@ -147,9 +147,9 @@ func Game(screen tcell.Screen) {
 						}
 					}
 					screen.Show()
-                    // if collisionCondition {
-                    //     return
-                    // }
+					if collisionCondition == false {
+						return
+					}
 				}
 			}
 		default:
@@ -173,6 +173,9 @@ func Game(screen tcell.Screen) {
 			screen.Show()
 			count += 1
 			downBias += 1
+			if collisionCondition == false {
+                return 
+            }
 			time.Sleep(100 * time.Millisecond)
 		}
 	}
