@@ -3,7 +3,8 @@ package main
 import (
 	"os"
 
-	"github.com/Sawansunar56/flappy-bird-golang/src/game"
+	// "github.com/Sawansunar56/flappy-bird-golang/src/game"
+	"github.com/Sawansunar56/flappy-bird-golang/src/menu"
 	"github.com/gdamore/tcell/v2"
 )
 
@@ -23,5 +24,6 @@ func main() {
 
 	// Create a simple TUI here
 
-	game.Game(screen)
+    menu.Menu(screen)
+	// game.Game(screen)
 }
