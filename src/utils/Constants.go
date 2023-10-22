@@ -1,7 +1,7 @@
 package utils
 
 const (
-	ScreenHeight   int  = 37
+	ScreenHeight   int  = 34
 	ScreenWidth    int  = 154
 	Wide           int  = 160
 	High           int  = 50

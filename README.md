@@ -1,6 +1,4 @@
 # flappy-bird
 
-## Todo List
-- Menu for the game
-- Point System.
-
+### Example
+![Example](https://i.imgur.com/vc8Bh7m.gif)
